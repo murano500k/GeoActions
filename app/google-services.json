@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "946462932783",
+    "firebase_url": "https://geoactions-42c9a.firebaseio.com",
+    "project_id": "geoactions-42c9a",
+    "storage_bucket": "geoactions-42c9a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:946462932783:android:d472ed3b6e8835e4",
+        "android_client_info": {
+          "package_name": "com.stc.geoactions"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "946462932783-clfu0a48ft52kgcss8g9v6j5669o2djj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.stc.geoactions",
+            "certificate_hash": "b87bea89170c0477dbd5600fd0870943b5d33fad"
+          }
+        },
+        {
+          "client_id": "946462932783-beksbtht51apsdl1mtuth0lqd5e5ef3h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyoivfpOw31MM6bCzGYk9XZ9ndh-ZxvUk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "946462932783-beksbtht51apsdl1mtuth0lqd5e5ef3h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

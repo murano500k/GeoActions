@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">GeoActions</string>
+    <string name="geofence_transition_invalid_type">invlid type error</string>
+    <string name="title_activity_add_fence">AddFenceActivity</string>
+</resources>
