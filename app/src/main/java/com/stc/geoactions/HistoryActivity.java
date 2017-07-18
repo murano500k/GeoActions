@@ -25,6 +25,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import static com.stc.geoactions.AddFenceActivity.MY_ID;
+
 public class HistoryActivity extends AppCompatActivity {
     private static final String TAG = "HistoryActivity";
     RecyclerView rv;
@@ -51,7 +53,7 @@ public class HistoryActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        myId= PreferenceManager.getDefaultSharedPreferences(this).getString(Constants.MY_ID, null);
+        myId= PreferenceManager.getDefaultSharedPreferences(this).getString(MY_ID, null);
         if(myId==null){
             btnAddFence.setVisibility(View.VISIBLE);
         }else {

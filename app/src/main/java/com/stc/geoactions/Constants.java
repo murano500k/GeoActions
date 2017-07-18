@@ -5,6 +5,5 @@ package com.stc.geoactions;
  */
 
 public class Constants {
-    public static final String MY_ID = "MY_ID";
 
 }
