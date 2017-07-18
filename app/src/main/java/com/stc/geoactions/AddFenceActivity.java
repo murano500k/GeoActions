@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.android.gms.location.Geofence.NEVER_EXPIRE;
-import static com.stc.geoactions.MainActivity.GEOFENCE_WRK;
 
 public class AddFenceActivity extends AppCompatActivity implements
         OnMapReadyCallback,
@@ -45,6 +44,7 @@ public class AddFenceActivity extends AppCompatActivity implements
         LocationListener {
     private static final String TAG = "AddFenceActivity";
     private static final int REQ_PERMISSION = 42;
+    public static final String GEOFENCE_WRK = "GEOFENCE_WRK";
     private GoogleApiClient googleApiClient;
     private Location lastLocation;
     private TextView textLocation;
