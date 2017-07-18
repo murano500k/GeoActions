@@ -55,8 +55,10 @@ public class HistoryActivity extends AppCompatActivity {
         super.onResume();
         myId= PreferenceManager.getDefaultSharedPreferences(this).getString(MY_ID, null);
         if(myId==null){
+            Log.e(TAG, "onResume: no id");
             btnAddFence.setVisibility(View.VISIBLE);
         }else {
+            btnAddFence.setVisibility(View.GONE);
             adapter=new DbAdapter();
             rv=(RecyclerView)findViewById(R.id.rv);
             rv.setLayoutManager(new LinearLayoutManager(getApplicationContext()));

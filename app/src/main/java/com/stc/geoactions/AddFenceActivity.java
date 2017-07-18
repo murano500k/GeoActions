@@ -66,9 +66,9 @@ public class AddFenceActivity extends AppCompatActivity implements
                 Intent intent = new Intent();
                 if (lastLocation != null) {
                     addFence(lastLocation);
-                }
-                setResult(RESULT_OK, intent);
-                finish();
+                    setResult(RESULT_OK, intent);
+                    finish();
+                }else Log.e(TAG, "onClick: no location" );
             }
         });
         textLocation = (TextView) findViewById(R.id.textLocation);
@@ -76,6 +76,7 @@ public class AddFenceActivity extends AppCompatActivity implements
     }
 
     public void addFence(Location location) {
+        Log.d(TAG, "addFence: "+location);
         List<Geofence> geofenceList = new ArrayList<>();
         geofenceList.add(new Geofence.Builder()
                 // Set the request ID of the geofence. This is a string to identify this
@@ -100,11 +101,12 @@ public class AddFenceActivity extends AppCompatActivity implements
         GeofencingRequest request = builder.build();
         if (mGeofencingClient == null)
             mGeofencingClient = LocationServices.getGeofencingClient(this);
-        if (checkPermission()) {
+        if (!checkPermission()) {
             askPermission();
             return;
         }
         mGeofencingClient.addGeofences(request, geofencePendingIntent);
+        Log.d(TAG, "addFence: success");
         PreferenceManager.getDefaultSharedPreferences(this).edit().putString(MY_ID, GEOFENCE_WRK).apply();
     }
 
