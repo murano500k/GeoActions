@@ -13,6 +13,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.stc.geoactions.data.DbEntry;
 
+import static com.stc.geoactions.AddFenceActivity.MY_ID;
+
 /**
  * Created by artem on 7/13/17.
  */
@@ -24,7 +26,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         mPrefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        String id= mPrefs.getString(Constants.MY_ID, null);
+        String id= mPrefs.getString(MY_ID, null);
         if(id==null) throw new NullPointerException("no id");
         ref= FirebaseDatabase.getInstance().getReference(id);
         return super.onStartCommand(intent, flags, startId);

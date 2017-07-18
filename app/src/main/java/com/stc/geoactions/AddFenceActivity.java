@@ -45,6 +45,8 @@ public class AddFenceActivity extends AppCompatActivity implements
     private static final String TAG = "AddFenceActivity";
     private static final int REQ_PERMISSION = 42;
     public static final String GEOFENCE_WRK = "GEOFENCE_WRK";
+    public static final String MY_ID = "MY_ID";
+
     private GoogleApiClient googleApiClient;
     private Location lastLocation;
     private TextView textLocation;
@@ -103,7 +105,7 @@ public class AddFenceActivity extends AppCompatActivity implements
             return;
         }
         mGeofencingClient.addGeofences(request, geofencePendingIntent);
-        PreferenceManager.getDefaultSharedPreferences(this).edit().putString(Constants.MY_ID, GEOFENCE_WRK).apply();
+        PreferenceManager.getDefaultSharedPreferences(this).edit().putString(MY_ID, GEOFENCE_WRK).apply();
     }
 
     // Create GoogleApiClient instance
