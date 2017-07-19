@@ -4,10 +4,13 @@ import android.arch.lifecycle.Lifecycle;
 import android.arch.lifecycle.LifecycleObserver;
 import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.Context;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.format.DateUtils;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -15,8 +18,19 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.stc.geoactions.data.Record;
+import com.stc.geoactions.db.AppDatabase;
+import com.stc.geoactions.db.RecordDao;
+
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 import static android.arch.lifecycle.Lifecycle.State.STARTED;
+import static com.stc.geoactions.location.MyActivity.PERIOD_ALL;
+import static com.stc.geoactions.location.MyActivity.PERIOD_TODAY;
 
 /**
  * Created by artem on 7/19/17.
@@ -33,18 +47,20 @@ import static android.arch.lifecycle.Lifecycle.State.STARTED;
     Lifecycle lifecycle;
     private GoogleApiClient googleApiClient;
     private Location lastLocation;
+    private final int UPDATE_INTERVAL =  60000;
+    private final int FASTEST_INTERVAL = 10000;
+    private RecordDao recordDao;
+    Geocoder geocoder;
 
-
-    // Defined in mili seconds.
-    // This number in extremely low, and should be used only for debug
-    private final int UPDATE_INTERVAL =  1000;
-    private final int FASTEST_INTERVAL = 900;
 
     public MyLocationListener(Context context, Lifecycle lifecycle, Callback callback) {
         this.mContext=context;
         this.lifecycle=lifecycle;
         this.callback=callback;
         createGoogleApi();
+        AppDatabase db = AppDatabase.getAppDatabase(context);
+        recordDao=db.recordDao();
+        geocoder=new Geocoder(context, Locale.getDefault());
     }
     // Create GoogleApiClient instance
     private void createGoogleApi() {
@@ -59,15 +75,33 @@ import static android.arch.lifecycle.Lifecycle.State.STARTED;
     }
 
 
-    public void enable() {
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    void start() {
+        Log.w(TAG, "start: "+lifecycle.getCurrentState() );
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    void stopLs() {
+        Log.w(TAG, "stop: "+lifecycle.getCurrentState() );
+    }
+
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    void enable() {
+        Log.w(TAG, "enable: "+lifecycle.getCurrentState() );
         if (lifecycle.getCurrentState().isAtLeast(STARTED)) {
             if(!googleApiClient.isConnected())googleApiClient.connect();
         }
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
     void stop() {
-        if(!googleApiClient.isConnected())googleApiClient.disconnect();
+        Log.w(TAG, "stop: connected: "+googleApiClient.isConnected());
+        if(googleApiClient.isConnected()){
+            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
+            googleApiClient.disconnect();
+        }
+
     }
 
     @Override
@@ -87,6 +121,7 @@ import static android.arch.lifecycle.Lifecycle.State.STARTED;
 
     @Override
     public void onConnectionSuspended(int i) {
+        Log.w(TAG, "onConnectionSuspended: removeLocationUpdates");
         LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
     }
 
@@ -111,11 +146,47 @@ import static android.arch.lifecycle.Lifecycle.State.STARTED;
         Log.d(TAG, "onLocationChanged ["+location+"]");
         lastLocation = location;
         callback.setLocation(lastLocation);
+        if(lastLocation.distanceTo(location)>10) recordDao.insertItem(new Record(lastLocation));
     }
 
 
 
     public interface Callback {
         void setLocation(Location location);
+    }
+
+
+    public PolylineOptions getHistory(String period){
+        List<Record> records=recordDao.loadAllRecords();
+        records.sort(new Comparator<Record>() {
+            @Override
+            public int compare(Record o1, Record o2) {
+                if(o1.getTimestamp()==o2.getTimestamp())return 0;
+                else if(o1.getTimestamp()>o2.getTimestamp())return 1;
+                else return -1;
+            }
+        });
+        PolylineOptions polylineOptions=new PolylineOptions();
+        for(Record record : records){
+            if((period.equals(PERIOD_TODAY) && DateUtils.isToday(record.getTimestamp())) ||
+                    period.equals(PERIOD_ALL))
+            polylineOptions.add(record.getLatLng());
+        }
+        return polylineOptions;
+    }
+    public String getAddress(Location location){
+        String result="";
+        List<Address> addresses=null;
+        try {
+            addresses = geocoder.getFromLocation(location.getLatitude(),location.getLongitude(),1 );
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "error getting address";
+        }
+        if(addresses==null || addresses.isEmpty()) return "no address";
+        else {
+            Address address=addresses.get(0);
+            return address.getAddressLine(0)+"";
+        }
     }
 }

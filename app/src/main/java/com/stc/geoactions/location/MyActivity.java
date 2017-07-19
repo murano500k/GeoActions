@@ -8,15 +8,19 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.stc.geoactions.R;
 
 public class MyActivity extends LifecycleActivity implements OnMapReadyCallback, MyLocationListener.Callback {
@@ -27,6 +31,8 @@ public class MyActivity extends LifecycleActivity implements OnMapReadyCallback,
     private Location location;
     private TextView textLocation;
     private FloatingActionButton floatingActionButton;
+    public static final String PERIOD_ALL = "PERIOD_ALL";
+    public static final String PERIOD_TODAY = "PERIOD_TODAY";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +40,8 @@ public class MyActivity extends LifecycleActivity implements OnMapReadyCallback,
         setContentView(R.layout.activity_my);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this); //error
+        mapFragment.getMapAsync(this);
+        myLocationListener = new MyLocationListener(this, getLifecycle(), this);
         textLocation=(TextView) findViewById(R.id.textLocation);
         floatingActionButton=(FloatingActionButton)findViewById(R.id.floatingActionButton);
         floatingActionButton.setOnClickListener(v -> {
@@ -42,7 +49,8 @@ public class MyActivity extends LifecycleActivity implements OnMapReadyCallback,
             else myLocationListener.enable();
         });
         textLocation.setText("no location");
-        myLocationListener = new MyLocationListener(this, getLifecycle(), this);
+        textLocation.setOnClickListener(v -> showDialogSelectPeriod());
+
     }
 
     private boolean checkPermission() {
@@ -109,6 +117,46 @@ public class MyActivity extends LifecycleActivity implements OnMapReadyCallback,
         MarkerOptions markerOptions =new MarkerOptions();
         markerOptions.position(new LatLng(location.getLatitude(),location.getLongitude()));
         googleMap.addMarker(markerOptions);
-        textLocation.setText(location.toString());
+        updateStatus(location);
+    }
+
+    private void updateStatus(Location location) {
+        String status=myLocationListener.getAddress(location)+
+                "\nacc: "+location.getAccuracy()+
+                "\nspeed: "+location.getSpeed();
+        textLocation.setText(status);
+        Log.d(TAG, "updateStatus: "+status);
+    }
+
+    public void showHistoy(String period){
+        if(googleMap!=null){
+            googleMap.clear();
+            PolylineOptions polylineOptions=myLocationListener.getHistory(period);
+            if(polylineOptions.getPoints().isEmpty()){
+                Log.e(TAG, "showHistoy: empty" );
+                Toast.makeText(this, "No data for this period", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            googleMap.addPolyline(polylineOptions);
+            LatLngBounds.Builder builder=new LatLngBounds.Builder();
+            for(LatLng latLng : polylineOptions.getPoints()){
+                builder.include(latLng);
+            }
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 100));
+        }else {
+            Log.e(TAG, "showHistoy: error" );
+            Toast.makeText(this, "Map error", Toast.LENGTH_SHORT).show();
+        }
+    }
+    public void showDialogSelectPeriod(){
+        AlertDialog.Builder aBuilder=new AlertDialog.Builder(this);
+        aBuilder.setPositiveButton(PERIOD_ALL, (dialog, which) -> showHistoy(PERIOD_ALL))
+                .setNegativeButton(PERIOD_TODAY, (dialog, which) -> showHistoy(PERIOD_TODAY))
+                .setNeutralButton("clear map", (dialog, which) -> {
+                    dialog.dismiss();
+                    googleMap.clear();
+                });
+        aBuilder.setMessage("Select action:");
+        aBuilder.create().show();
     }
 }
