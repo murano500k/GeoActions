@@ -12,6 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -61,6 +62,7 @@ import static com.stc.geoactions.location.MyActivity.PERIOD_TODAY;
         AppDatabase db = AppDatabase.getAppDatabase(context);
         recordDao=db.recordDao();
         geocoder=new Geocoder(context, Locale.getDefault());
+        lifecycle.addObserver(this);
     }
     // Create GoogleApiClient instance
     private void createGoogleApi() {
@@ -78,30 +80,38 @@ import static com.stc.geoactions.location.MyActivity.PERIOD_TODAY;
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     void start() {
         Log.w(TAG, "start: "+lifecycle.getCurrentState() );
+        if (lifecycle.getCurrentState().isAtLeast(STARTED)) {
+            if(!googleApiClient.isConnected()){
+                googleApiClient.connect();
+            }
+        }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     void stopLs() {
         Log.w(TAG, "stop: "+lifecycle.getCurrentState() );
+        if(googleApiClient.isConnected()){
+            googleApiClient.disconnect();
+        }
     }
 
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     void enable() {
         Log.w(TAG, "enable: "+lifecycle.getCurrentState() );
-        if (lifecycle.getCurrentState().isAtLeast(STARTED)) {
-            if(!googleApiClient.isConnected())googleApiClient.connect();
+        if(googleApiClient.isConnected()){
+            startLocationUpdates();
+        }else {
+            Toast.makeText(mContext, "not connected yet", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "enable: not connected" );
+            googleApiClient.connect();
         }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
     void stop() {
         Log.w(TAG, "stop: connected: "+googleApiClient.isConnected());
-        if(googleApiClient.isConnected()){
-            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
-            googleApiClient.disconnect();
-        }
-
+        stopLocationUpdates();
     }
 
     @Override
@@ -121,8 +131,7 @@ import static com.stc.geoactions.location.MyActivity.PERIOD_TODAY;
 
     @Override
     public void onConnectionSuspended(int i) {
-        Log.w(TAG, "onConnectionSuspended: removeLocationUpdates");
-        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
+        Log.w(TAG, "onConnectionSuspended");
     }
 
     @Override
@@ -132,21 +141,28 @@ import static com.stc.geoactions.location.MyActivity.PERIOD_TODAY;
     }
 
     private void startLocationUpdates(){
-        Log.i(TAG, "startLocationUpdates()");
+        Log.w(TAG, "startLocationUpdates()");
         LocationRequest locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(UPDATE_INTERVAL)
                 .setFastestInterval(FASTEST_INTERVAL);
          LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
     }
+    private void stopLocationUpdates(){
+        Log.w(TAG, "stopLocationUpdates()");
+        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
+    }
 
 
     @Override
     public void onLocationChanged(Location location) {
-        Log.d(TAG, "onLocationChanged ["+location+"]");
+        Log.d(TAG, "onLocationChanged ["+location+"] \ndist: "+lastLocation.distanceTo(location));
         lastLocation = location;
         callback.setLocation(lastLocation);
-        if(lastLocation.distanceTo(location)>10) recordDao.insertItem(new Record(lastLocation));
+        if(lastLocation!=null /*&& lastLocation.distanceTo(location)>5.0f*/) {
+            Log.d(TAG, "onLocationChanged: insert");
+            recordDao.insertItem(new Record(lastLocation));
+        }
     }
 
 
@@ -158,6 +174,7 @@ import static com.stc.geoactions.location.MyActivity.PERIOD_TODAY;
 
     public PolylineOptions getHistory(String period){
         List<Record> records=recordDao.loadAllRecords();
+        Log.d(TAG, "getHistory: "+records.size());
         records.sort(new Comparator<Record>() {
             @Override
             public int compare(Record o1, Record o2) {
@@ -169,8 +186,10 @@ import static com.stc.geoactions.location.MyActivity.PERIOD_TODAY;
         PolylineOptions polylineOptions=new PolylineOptions();
         for(Record record : records){
             if((period.equals(PERIOD_TODAY) && DateUtils.isToday(record.getTimestamp())) ||
-                    period.equals(PERIOD_ALL))
-            polylineOptions.add(record.getLatLng());
+                    period.equals(PERIOD_ALL)) {
+                polylineOptions.add(record.getLatLng());
+                Log.d(TAG, "getHistory: add item "+record.toString());
+            }
         }
         return polylineOptions;
     }

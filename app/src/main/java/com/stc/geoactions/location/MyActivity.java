@@ -2,6 +2,8 @@ package com.stc.geoactions.location;
 
 import android.arch.lifecycle.LifecycleActivity;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -19,6 +21,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.stc.geoactions.R;
@@ -102,6 +105,19 @@ public class MyActivity extends LifecycleActivity implements OnMapReadyCallback,
         this.googleMap=googleMap;
         if(location!=null)googleMap.moveCamera(CameraUpdateFactory.newLatLng(
                 new LatLng(location.getLatitude(),location.getLongitude())));
+        setStyle();
+    }
+    private void setStyle(){
+        try {
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            this, R.raw.retro_map));
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
     }
 
     @Override
@@ -132,7 +148,9 @@ public class MyActivity extends LifecycleActivity implements OnMapReadyCallback,
         if(googleMap!=null){
             googleMap.clear();
             PolylineOptions polylineOptions=myLocationListener.getHistory(period);
-            if(polylineOptions.getPoints().isEmpty()){
+            polylineOptions.color(Color.RED);
+            Log.d(TAG, "showHistoy: pointscount="+polylineOptions.getPoints().size());
+            if(polylineOptions.getPoints().size()==0){
                 Log.e(TAG, "showHistoy: empty" );
                 Toast.makeText(this, "No data for this period", Toast.LENGTH_SHORT).show();
                 return;
